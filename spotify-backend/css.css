@@ -1,0 +1,178 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu&display=swap'); /* Loads the Ubuntu font for headings */
+@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap'); /* Loads the Varela Round font for body text */
+
+/* Overall page style */
+body {
+    background-color: rgb(150, 113, 65); /* Sets a warm brownish background color */
+    font-family: 'Varela Round', sans-serif; /* Sets default font for the page */
+}
+
+/* Reset margin/padding for all elements */
+* {
+    margin: 0; /* Removes default margins */
+    padding: 0; /* Removes default padding */
+    box-sizing: border-box; /* Includes border and padding in total element width/height */
+}
+
+/* Navigation bar styles */
+nav {
+    font-family: 'Ubuntu', sans-serif; /* Uses Ubuntu font for nav items */
+}
+
+nav ul {
+    display: flex; /* Displays items horizontally in a flex container */
+    align-items: center; /* Vertically centers nav items */
+    list-style-type: none; /* Removes default bullet points */
+    height: 65px; /* Sets fixed height for nav bar */
+    background-color: black; /* Background color for the navbar */
+    color: aliceblue; /* Text color for nav items */
+    padding: 0 20px; /* Adds horizontal padding inside nav */
+}
+
+nav ul li {
+    padding: 0 12px; /* Space between nav items */
+    cursor: pointer; /* Changes cursor to pointer on hover */
+}
+
+/* Brand logo and name inside navbar */
+.brand {
+    display: flex; /* Puts logo and text side by side */
+    align-items: center; /* Centers them vertically */
+    font-weight: bolder; /* Makes the brand name bold */
+    font-size: 1.3rem; /* Increases text size */
+}
+
+.brand img {
+    width: 44px; /* Logo width */
+    margin-right: 10px; /* Space between logo and text */
+}
+
+/* Main container for song list and banner */
+.container {
+    display: flex; /* Enables flex layout */
+    flex-direction: column; /* Stacks elements vertically */
+    padding: 30px; /* Adds padding around the content */
+    min-height: 71vh; /* Ensures container takes most of viewport height */
+    color: white; /* Sets text color inside container */
+    background-color: black; /* Fallback background color */
+    font-family: 'Varela Round', sans-serif; /* Font for song list text */
+    width: 70%; /* Container width relative to screen */
+    margin: 23px auto; /* Centers container horizontally */
+    border-radius: 12px; /* Rounds container corners */
+    background-image: url('bg.jpg'); /* Adds background image */
+    background-size: cover; /* Scales background image to fill area */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat; /* Prevents image repetition */
+}
+
+/* Bottom music player bar */
+.bottom {
+    position: sticky; /* Keeps player fixed at bottom of viewport */
+    height: 100px; /* Fixed height for player bar */
+    background-color: black; /* Player background */
+    color: white; /* Text and icon color */
+    bottom: 0; /* Sticks it to the bottom */
+    display: flex; /* Flex container for layout */
+    flex-direction: column; /* Stacks child elements vertically */
+    justify-content: center; /* Centers vertically */
+    align-items: center; /* Centers horizontally */
+    gap: 10px; /* Space between player sections */
+}
+
+/* Progress bar styling */
+#myProgressBar {
+    width: 80vw; /* Progress bar width (80% of viewport width) */
+    cursor: pointer; /* Cursor turns into a pointer on hover */
+}
+
+/* Playback control icons section */
+.icons {
+    display: flex; /* Puts icons side by side */
+    justify-content: center; /* Centers them horizontally */
+    align-items: center; /* Centers vertically */
+    gap: 20px; /* Space between icons */
+    cursor: pointer; /* Makes icons clickable */
+}
+
+/* Individual song item styling */
+.songitem {
+    display: flex; /* Aligns image, text, and timestamp in a row */
+    align-items: center; /* Centers them vertically */
+    justify-content: left; /* Aligns items to the left */
+    background-color: white; /* White background for each song */
+    color: black; /* Black text for contrast */
+    border-radius: 15px; /* Rounded corners */
+    margin-top: 0.1rem; /* Small gap between items */
+    padding: 0 15px; /* Horizontal padding inside item */
+    height: 40px; /* Fixed height of song item */
+    width: 355px; /* Fixed width of song item */
+}
+
+.songitem img {
+    width: 30px; /* Thumbnail width */
+    height: 30px; /* Thumbnail height */
+    border-radius: 50%; /* Makes image circular */
+    margin-right: 10px; /* Space between image and song name */
+}
+
+/* Timestamp area (duration + play button) */
+.timestamp {
+    display: flex; /* Aligns time and icon in a row */
+    align-items: center; /* Centers them vertically */
+    gap: 5px; /* Space between time text and icon */
+    font-size: 14px; /* Slightly smaller font */
+}
+
+.timestamp i {
+    cursor: pointer; /* Makes play icon clickable */
+}
+
+/* Scrollable song list container */
+.songitemcontainer {
+    margin-top: 40px; /* Space above song list */
+    max-height: 300px; /* Limits visible height */
+    overflow-y: auto;  /* Enables vertical scrolling */
+    padding-right: 5px; /* Small right padding */
+}
+
+/* Optional: hide scrollbar for cleaner look */
+.songitemcontainer::-webkit-scrollbar {
+    width: 0px; /* Hides scrollbar for Chrome/Safari */
+}
+
+/* Song name text styling */
+.songName {
+    flex-grow: 1; /* Makes song name take up available space */
+    font-weight: 500; /* Slightly bold text */
+}
+
+/* Song info (bottom player section) */
+.songinfo {
+    position: absolute; /* Positions it within player area */
+    left: 10vw; /* Places song info slightly from left side */
+    font-family: 'Ubuntu', sans-serif; /* Font for now-playing info */
+}
+
+.songinfo img {
+    opacity: 1; /* Makes GIF visible */
+    transition: opacity 0.4s ease-in; /* Smooth transition when toggling visibility */
+}
+
+/* Search bar styling */
+.search-bar {
+  width: 20%; /* Width of the search bar */
+  padding: 8px 12px; /* Inner padding for comfortable typing */
+  margin: 10px 0; /* Space around the search input */
+  font-size: 16px; /* Readable text size */
+  border-radius: 8px; /* Rounded corners */
+  border: none; /* Removes default border */
+  outline: none; /* Removes blue outline on focus */
+}
+
+/* Volume control styling */
+#volumeControl {
+    margin-left: 20px; /* Space between player and volume slider */
+    width: 100px; /* Width of the volume slider */
+    cursor: pointer; /* Makes it clickable */
+}

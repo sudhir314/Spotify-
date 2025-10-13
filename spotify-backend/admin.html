@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Page metadata -->
+    <meta charset="UTF-8">
+    <title>Admin - Manage Songs</title>
+
+    <!-- Internal CSS styling for the page -->
+    <style>
+        /* Body styling: center content and give background */
+        body { 
+            font-family: sans-serif; /* Default font */
+            background-color: #f4f4f4; /* Light gray background */
+            display: flex; /* Use flexbox for centering */
+            justify-content: center; /* Horizontally center container */
+            align-items: center; /* Vertically center container */
+            min-height: 100vh; /* Full viewport height */
+            padding: 20px 0; /* Vertical padding */
+        }
+
+        /* Upload form container */
+        .upload-container { 
+            background: white; /* White box */
+            padding: 40px; /* Internal padding */
+            border-radius: 10px; /* Rounded corners */
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); /* Light shadow */
+            width: 500px; /* Fixed width */
+            max-width: 90%; /* Responsive max width */
+        }
+
+        /* Headings styling */
+        h1, h2 { 
+            text-align: center; /* Centered text */
+            color: #333; /* Dark gray color */
+        }
+
+        /* Form group spacing */
+        .form-group { 
+            margin-bottom: 20px; /* Space between input fields */
+        }
+
+        /* Labels styling */
+        label { 
+            display: block; /* Put label on its own line */
+            margin-bottom: 5px; /* Space below label */
+            color: #555; /* Medium gray */
+        }
+
+        /* Text and file inputs styling */
+        input[type="text"], input[type="file"] { 
+            width: 100%; /* Full width */
+            padding: 10px; /* Inner padding */
+            border: 1px solid #ddd; /* Light gray border */
+            border-radius: 5px; /* Rounded corners */
+            box-sizing: border-box; /* Includes padding in width */
+        }
+
+        /* Buttons styling */
+        button { 
+            width: 100%; /* Full width button */
+            padding: 12px; /* Vertical padding */
+            background-color: #1DB954; /* Spotify green */
+            color: white; /* White text */
+            border: none; /* Remove default border */
+            border-radius: 5px; /* Rounded corners */
+            cursor: pointer; /* Pointer on hover */
+            font-size: 16px; /* Readable text */
+        }
+
+        /* Button hover effect */
+        button:hover { 
+            background-color: #1AA34A; /* Slightly darker green */
+        }
+
+        /* Message div styling */
+        #message { 
+            margin-top: 20px; /* Space above message */
+            text-align: center; /* Centered text */
+            font-weight: bold; /* Bold for visibility */
+        }
+
+        /* --- Styles for the delete section --- */
+        .manage-section {
+            margin-top: 40px; /* Space above delete section */
+            border-top: 1px solid #eee; /* Light top border */
+            padding-top: 20px; /* Padding inside section */
+        }
+
+        /* Delete button styling */
+        #deleteSongBtn {
+            background-color: #ff4d4d; /* Red for danger/delete */
+            margin-top: 10px; /* Space above button */
+        }
+
+        /* Delete button hover effect */
+        #deleteSongBtn:hover {
+            background-color: #e60000; /* Darker red on hover */
+        }
+    </style>
+</head>
+<body>
+    <!-- Main container for upload & delete forms -->
+    <div class="upload-container">
+        <!-- Heading for upload -->
+        <h1>Upload a New Song</h1>
+
+        <!-- Upload form -->
+        <form id="uploadForm">
+            <!-- Song name input -->
+            <div class="form-group">
+                <label for="songName">Song Name:</label>
+                <input type="text" id="songName" name="songName" required>
+            </div>
+
+            <!-- Artist name input (optional) -->
+            <div class="form-group">
+                <label for="artist">Artist Name (Optional):</label>
+                <input type="text" id="artist" name="artist">
+            </div>
+
+            <!-- Song file input -->
+            <div class="form-group">
+                <label for="songFile">Song File (MP3):</label>
+                <input type="file" id="songFile" name="songFile" accept=".mp3" required>
+            </div>
+
+            <!-- Cover image input -->
+            <div class="form-group">
+                <label for="coverFile">Cover Image (JPG, PNG):</label>
+                <input type="file" id="coverFile" name="coverFile" accept="image/*" required>
+            </div>
+
+            <!-- Submit button -->
+            <button type="submit">Upload Song</button>
+        </form>
+
+        <!-- Div to show messages like success/error -->
+        <div id="message"></div>
+
+        <!-- --- Delete song section --- -->
+        <div class="manage-section">
+            <h2>Delete a Song by Name</h2>
+
+            <!-- Input to type exact song name -->
+            <div class="form-group">
+                <label for="songNameToDelete">Enter Exact Song Name to Delete:</label>
+                <input type="text" id="songNameToDelete" placeholder="Case-sensitive song name" required>
+            </div>
+
+            <!-- Delete button -->
+            <button id="deleteSongBtn">Delete Song</button>
+        </div>
+    </div>
+
+    <!-- JavaScript section -->
+    <script>
+        // --- Selecting elements ---
+        const form = document.getElementById('uploadForm'); // Upload form
+        const messageDiv = document.getElementById('message'); // Message div
+        const serverUrl = 'http://localhost:3000/'; // Backend server base URL
+
+        // Delete feature elements
+        const deleteInput = document.getElementById('songNameToDelete'); // Input for song name to delete
+        const deleteBtn = document.getElementById('deleteSongBtn'); // Delete button
+
+        // --- UPLOAD LOGIC ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent default form submission
+            const formData = new FormData(); // Create FormData object to send files
+            formData.append('songName', document.getElementById('songName').value);
+            formData.append('artist', document.getElementById('artist').value);
+            formData.append('songFile', document.getElementById('songFile').files[0]);
+            formData.append('coverFile', document.getElementById('coverFile').files[0]);
+
+            // Show uploading message
+            messageDiv.textContent = 'Uploading...';
+            messageDiv.style.color = 'black';
+
+            try {
+                // Send POST request to backend
+                const response = await fetch(`${serverUrl}api/upload`, { method: 'POST', body: formData });
+                if (response.ok) {
+                    messageDiv.textContent = 'Song uploaded successfully!';
+                    messageDiv.style.color = 'green';
+                    form.reset(); // Clear form fields
+                } else {
+                    const error = await response.json();
+                    messageDiv.textContent = `Upload failed: ${error.message}`;
+                    messageDiv.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error uploading song:', error);
+                messageDiv.textContent = 'An error occurred during upload.';
+                messageDiv.style.color = 'red';
+            }
+        });
+
+        // --- DELETE SONG LOGIC ---
+        deleteBtn.addEventListener('click', async () => {
+            const songName = deleteInput.value.trim(); // Get input value
+            if (!songName) {
+                alert('Please enter a song name to delete.');
+                return;
+            }
+
+            // Confirm deletion
+            if (!confirm(`Are you sure you want to permanently delete the song "${songName}"?`)) {
+                return;
+            }
+
+            try {
+                // 1. Get all songs from backend
+                const getSongsResponse = await fetch(`${serverUrl}api/songs`);
+                const allSongs = await getSongsResponse.json();
+
+                // 2. Find song by exact name
+                const songToDelete = allSongs.find(song => song.songName === songName);
+
+                if (!songToDelete) {
+                    messageDiv.textContent = `Song "${songName}" not found.`;
+                    messageDiv.style.color = 'red';
+                    return;
+                }
+
+                // 3. Send DELETE request using the song ID
+                const songId = songToDelete._id;
+                const deleteResponse = await fetch(`${serverUrl}api/songs/${songId}`, {
+                    method: 'DELETE',
+                });
+
+                if (deleteResponse.ok) {
+                    messageDiv.textContent = `Song "${songName}" was deleted successfully!`;
+                    messageDiv.style.color = 'green';
+                    deleteInput.value = ''; // Clear input field
+                } else {
+                    messageDiv.textContent = 'Failed to delete the song from the server.';
+                    messageDiv.style.color = 'red';
+                }
+
+            } catch (error) {
+                console.error('Error during deletion process:', error);
+                messageDiv.textContent = 'An error occurred during deletion.';
+                messageDiv.style.color = 'red';
+            }
+        });
+    </script>
+</body>
+</html>
