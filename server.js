@@ -25,13 +25,19 @@ app.use(express.static('public')); // Serves static files (songs, covers, etc.) 
 // DATABASE CONNECTION (MONGODB)
 // -------------------------------
 
+// --- MongoDB Connection ---
 mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
-  .then(() => console.log('✅ MongoDB connected successfully.'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
 
+// This is a more robust way to listen for connection events
+mongoose.connection.on('error', err => {
+  console.error('MongoDB connection error:', err);
+});
+mongoose.connection.once('open', () => {
+  console.log('MongoDB connected successfully.');
+});
 // -------------------------------
 // FILE UPLOAD SETUP (MULTER)
 // -------------------------------
