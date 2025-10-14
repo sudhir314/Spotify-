@@ -9,7 +9,8 @@ let myProgressBar = document.getElementById('myProgressBar'); // Progress slider
 let gif = document.getElementById('gif'); // Animated GIF when music plays
 let songInfoText = document.querySelector(".songinfo span"); // Song title at the bottom
 const songItemContainer = document.querySelector(".songitemcontainer"); // Container for song list
-const serverUrl = 'http://localhost:3000/'; // Backend server URL
+const serverUrl = 'https://spotify-backend-sudhir314.onrender.com/';
+ // Backend server URL
 
 // Timer displays
 const currentTimeDisplay = document.getElementById('current-time'); // Current time
