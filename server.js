@@ -25,10 +25,10 @@ app.use(express.static('public')); // Serves static files (songs, covers, etc.) 
 // DATABASE CONNECTION (MONGODB)
 // -------------------------------
 
-mongoose.connect('mongodb://localhost:27017/spotifyclone', {
+mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
-})
+});
   .then(() => console.log('✅ MongoDB connected successfully.'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
