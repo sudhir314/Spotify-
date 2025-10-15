@@ -176,12 +176,3 @@ nav ul li {
     width: 100px; /* Width of the volume slider */
     cursor: pointer; /* Makes it clickable */
 }
-/* Styling for the delete button in the song list */
-.delete-btn {
-    color: #a7a7a7;
-    cursor: pointer;
-    margin-left: 10px;
-}
-.delete-btn:hover {
-    color: #ff4d4d;
-}
