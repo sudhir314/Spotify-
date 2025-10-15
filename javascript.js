@@ -1,184 +1,93 @@
-// Log a welcome message to console
-console.log("Welcome to Spotify");
+// server.js (FINAL CLOUDINARY VERSION)
 
-// --- Initialize Variables ---
-let songIndex = 0; // Tracks the currently playing song index
-let audioElement = new Audio(); // Create a new Audio object
-let masterPlay = document.getElementById('masterPlay'); // Play/Pause button
-let myProgressBar = document.getElementById('myProgressBar'); // Progress slider
-let gif = document.getElementById('gif'); // Animated GIF when music plays
-let songInfoText = document.querySelector(".songinfo span"); // Song title at the bottom
-const songItemContainer = document.querySelector(".songitemcontainer"); // Container for song list
-const serverUrl = 'https://spotify-backend-sudhir314.onrender.com/';
- // Backend server URL
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+const Song = require('./models/Song');
 
-// Timer displays
-const currentTimeDisplay = document.getElementById('current-time'); // Current time
-const totalDurationDisplay = document.getElementById('total-duration'); // Total duration
+const app = express();
+const PORT = 3000;
 
-let songs = []; // Array to store songs fetched from server
+// --- Configure Cloudinary using secret keys from Render ---
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// --- Format seconds into MM:SS format ---
-function formatTime(seconds) {
-    if (isNaN(seconds) || seconds < 0) return "00:00"; // Handle invalid numbers
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-}
+// --- Middleware ---
+app.use(cors());
+app.use(express.json());
 
-// --- Fetch songs from server ---
-async function getSongs() {
-    try {
-        const response = await fetch(`${serverUrl}api/songs`); // GET request to backend
-        songs = await response.json(); // Store songs in array
-        renderSongList(); // Render songs in UI
-        loadInitialSong(); // Load first song in player
-        updateAllSongDurations(); // Update durations for each song
-    } catch (error) {
-        console.error("Failed to fetch songs:", error);
-        songItemContainer.innerHTML = "<p style='color: white;'>Could not load songs. Is the server running?</p>";
+// --- MongoDB Connection ---
+mongoose.connect(process.env.DATABASE_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+mongoose.connection.on('error', err => console.error('MongoDB connection error:', err));
+mongoose.connection.once('open', () => console.log('MongoDB connected successfully.'));
+
+// --- File Upload Setup (Multer with Cloudinary) ---
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'spotify_songs', // A folder name in your Cloudinary account
+    allowed_formats: ['mp3', 'jpeg', 'png', 'jpg'],
+    resource_type: 'auto' // Automatically detect if it's an image or audio
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// --- API Routes ---
+
+// GET all songs
+app.get('/api/songs', async (req, res) => {
+  try {
+    const songs = await Song.find();
+    res.json(songs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST a new song (sends files to Cloudinary)
+app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
+  try {
+    const { songName, artist } = req.body;
+    // Get the permanent, secure URLs from Cloudinary's response
+    const filePath = req.files.songFile[0].path;
+    const coverPath = req.files.coverFile[0].path;
+
+    const newSong = new Song({ songName, artist, filePath, coverPath });
+    const savedSong = await newSong.save();
+    res.status(201).json(savedSong);
+  } catch (err) {
+      console.error("Error during upload:", err);
+      res.status(400).json({ message: "Upload failed, please check server logs." });
+  }
+});
+
+// DELETE a song by its ID
+app.delete('/api/songs/:id', async (req, res) => {
+  try {
+    const songId = req.params.id;
+    const deletedSong = await Song.findByIdAndDelete(songId);
+
+    if (!deletedSong) {
+      return res.status(404).json({ message: 'Song not found' });
     }
-}
-
-// --- Render songs in the song list container ---
-function renderSongList() {
-    songItemContainer.innerHTML = ''; // Clear container
-    songs.forEach((song, index) => {
-        // Add each song's HTML
-        songItemContainer.innerHTML += `
-        <div class="songitem">
-            <img src="${serverUrl}${song.coverPath}" alt="${song.songName}">
-            <span class="songName">${song.songName}</span>
-            <span class="timestamp">
-                <span class="song-duration">00:00</span> 
-                <i id="${index}" class="fa-solid fa-circle-play songItemPlay"></i>
-            </span>
-        </div>`;
-    });
-    addPlayButtonListeners(); // Add click listeners for each play button
-}
-
-// --- Update duration for each song dynamically ---
-function updateAllSongDurations() {
-    const durationElements = document.querySelectorAll('.song-duration'); // All duration spans
-    songs.forEach((song, index) => {
-        const tempAudio = new Audio(); // Temporary audio to load metadata
-        tempAudio.src = `${serverUrl}${song.filePath}`; // Set source
-        tempAudio.addEventListener('loadedmetadata', () => {
-            if (durationElements[index]) {
-                durationElements[index].innerText = formatTime(tempAudio.duration); // Update UI
-            }
-        });
-    });
-}
-
-// --- Load first song on page load ---
-function loadInitialSong() {
-    if (songs.length > 0) {
-        audioElement.src = `${serverUrl}${songs[0].filePath}`; // First song source
-        songInfoText.innerText = songs[0].songName; // Show title
-        gif.style.opacity = 0; // Hide GIF initially
-        
-        // Update total duration display once metadata is loaded
-        audioElement.addEventListener('loadedmetadata', () => {
-            totalDurationDisplay.innerText = formatTime(audioElement.duration);
-        });
-    }
-}
-
-// --- Handle main play/pause button ---
-masterPlay.addEventListener('click', () => {
-    if (!audioElement.src) return; // No song loaded
-    if (audioElement.paused || audioElement.currentTime <= 0) {
-        audioElement.play(); // Play song
-        masterPlay.classList.replace("fa-circle-play", "fa-circle-pause"); // Update icon
-        gif.style.opacity = 1; // Show GIF
-        document.getElementById(songIndex).classList.replace("fa-circle-play", "fa-circle-pause"); // Update list button
-    } else {
-        audioElement.pause(); // Pause song
-        masterPlay.classList.replace("fa-circle-pause", "fa-circle-play"); // Update icon
-        gif.style.opacity = 0; // Hide GIF
-        makeAllPlays(); // Reset all list play buttons
-    }
+    
+    res.json({ message: 'Song deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-// --- Update progress bar and timers as song plays ---
-audioElement.addEventListener('timeupdate', () => {
-    if (audioElement.duration) {
-        const progressPercent = (audioElement.currentTime / audioElement.duration) * 100;
-        myProgressBar.value = progressPercent; // Update slider
-
-        // Update timer text
-        currentTimeDisplay.innerText = formatTime(audioElement.currentTime);
-        totalDurationDisplay.innerText = formatTime(audioElement.duration);
-
-        // Move current-time text along slider
-        currentTimeDisplay.style.left = `${progressPercent}%`;
-    }
+// --- Start the Server ---
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at: http://localhost:${PORT}`);
 });
-
-// --- Seek functionality ---
-myProgressBar.addEventListener('input', () => {
-    if (audioElement.duration) {
-        audioElement.currentTime = (myProgressBar.value * audioElement.duration) / 100; // Set current time
-    }
-});
-
-// --- Play a specific song by index ---
-function playSong(index) {
-    if (songs.length === 0) return;
-    songIndex = index;
-    audioElement.src = `${serverUrl}${songs[songIndex].filePath}`; // Set new source
-    songInfoText.innerText = songs[songIndex].songName; // Update title
-    audioElement.currentTime = 0; // Reset time
-    audioElement.play(); // Play
-    gif.style.opacity = 1; // Show GIF
-    masterPlay.classList.replace("fa-circle-play", "fa-circle-pause"); // Update master button
-    makeAllPlays(); // Reset all other buttons
-    document.getElementById(songIndex).classList.replace("fa-circle-play", "fa-circle-pause"); // Update clicked button
-}
-
-// --- Next & Previous buttons ---
-document.getElementById("next").addEventListener("click", () => {
-    if (songs.length === 0) return;
-    const newIndex = (songIndex + 1) % songs.length; // Loop forward
-    playSong(newIndex);
-});
-document.getElementById("previous").addEventListener("click", () => {
-    if (songs.length === 0) return;
-    const newIndex = (songIndex - 1 + songs.length) % songs.length; // Loop backward
-    playSong(newIndex);
-});
-
-// --- Reset all list play buttons to play icon ---
-function makeAllPlays() {
-    Array.from(document.getElementsByClassName("songItemPlay")).forEach((element) => {
-        element.classList.replace("fa-circle-pause", "fa-circle-play");
-    });
-}
-
-// --- Add click listeners to each song play button ---
-function addPlayButtonListeners() {
-    Array.from(document.getElementsByClassName("songItemPlay")).forEach((element) => {
-        element.addEventListener("click", (e) => {
-            const clickedIndex = parseInt(e.target.id); // Get index
-            if (songIndex === clickedIndex && !audioElement.paused) {
-                audioElement.pause(); // Pause if already playing
-                e.target.classList.replace("fa-circle-pause", "fa-circle-play"); // Update icon
-                masterPlay.classList.replace("fa-circle-pause", "fa-circle-play"); // Update master button
-                gif.style.opacity = 0; // Hide GIF
-            } else {
-                playSong(clickedIndex); // Play selected song
-            }
-        });
-    });
-}
-
-// --- Volume control ---
-let volumeControl = document.getElementById('volumeControl');
-volumeControl.addEventListener('input', () => {
-    audioElement.volume = volumeControl.value; // Set audio volume
-});
-
-// --- Initialize player when DOM is ready ---
-document.addEventListener('DOMContentLoaded', getSongs);
