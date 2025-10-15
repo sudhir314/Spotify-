@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs'); // We still need this for multer, but not for deleting
+const fs = require('fs');
 const Song = require('./models/Song');
 
 const app = express();
@@ -31,15 +31,19 @@ mongoose.connection.once('open', () => {
 
 // --- File Upload Setup (Multer) ---
 const storage = multer.diskStorage({
+  // We go back to saving in the public folders
   destination: (req, file, cb) => {
-    const dir = '/tmp/uploads';
-    cb(null, dir);
+    if (file.fieldname === 'songFile') {
+      cb(null, 'public/songs/');
+    } else if (file.fieldname === 'coverFile') {
+      cb(null, 'public/covers/');
+    }
   },
   filename: (req, file, cb) => {
+    // We use the original filename
     cb(null, file.originalname);
   }
 });
-
 
 const upload = multer({ storage: storage });
 
@@ -58,9 +62,9 @@ app.get('/api/songs', async (req, res) => {
 // POST a new song
 app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
   const { songName, artist } = req.body;
- const filePath = `/tmp/uploads/${req.files.songFile[0].filename}`;
-const coverPath = `/tmp/uploads/${req.files.coverFile[0].filename}`;
-
+  // Use the correct path relative to the 'public' folder
+  const filePath = `songs/${req.files.songFile[0].filename}`;
+  const coverPath = `covers/${req.files.coverFile[0].filename}`;
 
   const newSong = new Song({ songName, artist, filePath, coverPath });
 
@@ -76,17 +80,18 @@ const coverPath = `/tmp/uploads/${req.files.coverFile[0].filename}`;
 app.delete('/api/songs/:id', async (req, res) => {
   try {
     const songId = req.params.id;
-    const deletedSong = await Song.findByIdAndDelete(songId); // Find and delete the song from MongoDB
+    const deletedSong = await Song.findByIdAndDelete(songId);
 
     if (!deletedSong) {
       return res.status(404).json({ message: 'Song not found' });
     }
 
-    // The code that tried to delete physical files and caused the crash has been removed.
+    // The code that tried to delete physical files and caused the crash is removed.
+    // This is the correct fix for the ephemeral file system.
 
-    res.json({ message: 'Song deleted successfully' }); // Send a success message
+    res.json({ message: 'Song deleted successfully' });
   } catch (err) {
-    res.status(500).json({ message: err.message }); // Send an error if something else fails
+    res.status(500).json({ message: err.message });
   }
 });
 
