@@ -1,42 +1,45 @@
- // server.js (FINAL VERSION with CLOUDINARY)
+// server.js (FINAL CORRECTED VERSION)
 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('cloudinary').v2;
+const path = require('path');
+const fs = require('fs');
 const Song = require('./models/Song');
 
 const app = express();
 const PORT = 3000;
 
-// --- Configure Cloudinary using secret keys from Render ---
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 // --- MongoDB Connection ---
 mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
-mongoose.connection.on('error', err => console.error('MongoDB connection error:', err));
-mongoose.connection.once('open', () => console.log('MongoDB connected successfully.'));
 
-// --- File Upload Setup (Multer with Cloudinary) ---
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'spotify_songs', // A folder name in your Cloudinary account
-    allowed_formats: ['mp3', 'jpeg', 'png', 'jpg'],
-    resource_type: 'auto' // Automatically detect if it's an image or audio
+mongoose.connection.on('error', err => {
+  console.error('MongoDB connection error:', err);
+});
+mongoose.connection.once('open', () => {
+  console.log('MongoDB connected successfully.');
+});
+
+// --- File Upload Setup (Multer) ---
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    if (file.fieldname === 'songFile') {
+      cb(null, 'public/songs/');
+    } else if (file.fieldname === 'coverFile') {
+      cb(null, 'public/covers/');
+    }
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
   }
 });
 
@@ -54,33 +57,35 @@ app.get('/api/songs', async (req, res) => {
   }
 });
 
-// POST a new song (sends files to Cloudinary)
+// POST a new song
 app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
-  try {
-    const { songName, artist } = req.body;
-    // Get the permanent, secure URLs from Cloudinary's response
-    const filePath = req.files.songFile[0].path;
-    const coverPath = req.files.coverFile[0].path;
+  const { songName, artist } = req.body;
+  const filePath = `songs/${req.files.songFile[0].filename}`;
+  const coverPath = `covers/${req.files.coverFile[0].filename}`;
 
-    const newSong = new Song({ songName, artist, filePath, coverPath });
+  const newSong = new Song({ songName, artist, filePath, coverPath });
+
+  try {
     const savedSong = await newSong.save();
     res.status(201).json(savedSong);
   } catch (err) {
-      console.error("Error during upload:", err);
-      res.status(400).json({ message: "Upload failed, please check server logs." });
+    res.status(400).json({ message: err.message });
   }
 });
 
-// DELETE a song by its ID
+// DELETE a song by its ID (CORRECTED LOGIC)
 app.delete('/api/songs/:id', async (req, res) => {
   try {
     const songId = req.params.id;
-    const deletedSong = await Song.findByIdAndDelete(songId);
+    const deletedSong = await Song.findByIdAndDelete(songId); // Find and delete from MongoDB
 
     if (!deletedSong) {
       return res.status(404).json({ message: 'Song not found' });
     }
-    
+
+    // The code that tried to delete physical files (and caused the crash) is removed.
+    // This is the correct fix for Render's temporary file system.
+
     res.json({ message: 'Song deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
