@@ -9,7 +9,7 @@ const cloudinary = require('cloudinary').v2;
 const Song = require('./models/Song');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // Use port provided by Render
 
 // --- Configure Cloudinary using secret keys from Render ---
 cloudinary.config({
@@ -58,6 +58,10 @@ app.get('/api/songs', async (req, res) => {
 app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
   try {
     const { songName, artist } = req.body;
+    // Check if files were uploaded
+    if (!req.files || !req.files.songFile || !req.files.coverFile) {
+        return res.status(400).json({ message: "Both song and cover files are required." });
+    }
     // Get the permanent, secure URLs from Cloudinary's response
     const filePath = req.files.songFile[0].path;
     const coverPath = req.files.coverFile[0].path;
@@ -89,5 +93,5 @@ app.delete('/api/songs/:id', async (req, res) => {
 
 // --- Start the Server ---
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at: http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
