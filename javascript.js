@@ -1,4 +1,4 @@
-// javascript.js (FINAL VERSION - NO PUBLIC DELETE)
+// javascript.js (FINAL COMPLETE VERSION with Cloudinary and Delete)
 
 console.log("Welcome to Spotify");
 
@@ -10,7 +10,7 @@ let myProgressBar = document.getElementById('myProgressBar');
 let gif = document.getElementById('gif');
 let songInfoText = document.querySelector(".songinfo span");
 const songItemContainer = document.querySelector(".songitemcontainer");
-const serverUrl = 'https://sudhir-spotify-clone.netlify.app/'; // Using Netlify URL as the primary, but API calls go to Render
+const serverUrl = 'https://spotify-backend-sudhir314.onrender.com/';
 
 const currentTimeDisplay = document.getElementById('current-time');
 const totalDurationDisplay = document.getElementById('total-duration');
@@ -30,7 +30,7 @@ function formatTime(seconds) {
 // --- FETCH SONGS FROM THE SERVER ---
 async function getSongs() {
     try {
-        const response = await fetch('https://spotify-backend-sudhir314.onrender.com/api/songs'); // API calls still go to Render
+        const response = await fetch(`${serverUrl}api/songs`);
         songs = await response.json();
         renderSongList();
         loadInitialSong();
@@ -41,10 +41,13 @@ async function getSongs() {
     }
 }
 
-// --- RENDER THE SONG LIST IN THE UI (DELETE ICON REMOVED) ---
+// --- RENDER THE SONG LIST IN THE UI ---
 function renderSongList() {
     songItemContainer.innerHTML = '';
     songs.forEach((song, index) => {
+        const songId = song._id; // Get the unique ID for the delete button
+        
+        // Use song.coverPath directly as it is a full URL from Cloudinary
         songItemContainer.innerHTML += `
         <div class="songitem">
             <img src="${song.coverPath}" alt="${song.songName}">
@@ -52,12 +55,15 @@ function renderSongList() {
             <span class="timestamp">
                 <span class="song-duration">00:00</span>
                 <i id="${index}" class="fa-solid fa-circle-play songItemPlay"></i>
-                </span>
+                
+                <i data-id="${songId}" class="fa-solid fa-trash delete-btn"></i>
+            </span>
         </div>`;
     });
     
-    // Only add listeners for the play buttons
+    // Add listeners for both play and the new delete buttons
     addPlayButtonListeners();
+    addDeleteButtonListeners(); // This function call was missing
 }
 
 // --- Get the duration for each song in the list ---
@@ -65,6 +71,7 @@ function updateAllSongDurations() {
     const durationElements = document.querySelectorAll('.song-duration');
     songs.forEach((song, index) => {
         const tempAudio = new Audio();
+        // Use song.filePath directly
         tempAudio.src = song.filePath;
         tempAudio.addEventListener('loadedmetadata', () => {
             if (durationElements[index]) {
@@ -77,6 +84,7 @@ function updateAllSongDurations() {
 // --- Load the very first song into the player UI ---
 function loadInitialSong() {
     if (songs.length > 0) {
+        // Use song.filePath directly
         audioElement.src = songs[0].filePath;
         songInfoText.innerText = songs[0].songName;
         gif.style.opacity = 0;
@@ -130,6 +138,7 @@ myProgressBar.addEventListener('input', () => {
 function playSong(index) {
     if (songs.length === 0) return;
     songIndex = index;
+    // Use song.filePath directly
     audioElement.src = songs[songIndex].filePath;
     songInfoText.innerText = songs[songIndex].songName;
     audioElement.currentTime = 0;
@@ -174,7 +183,34 @@ function addPlayButtonListeners() {
     });
 }
 
-// --- THE addDeleteButtonListeners FUNCTION HAS BEEN COMPLETELY REMOVED ---
+// --- THIS ENTIRE FUNCTION WAS MISSING ---
+function addDeleteButtonListeners() {
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Prevents the song from playing
+
+            const songId = e.target.getAttribute('data-id');
+            
+            if (confirm('Are you sure you want to delete this song?')) {
+                try {
+                    const response = await fetch(`${serverUrl}api/songs/${songId}`, {
+                        method: 'DELETE',
+                    });
+
+                    if (response.ok) {
+                        getSongs(); // Refresh the entire song list
+                    } else {
+                        alert('Failed to delete the song.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting song:', error);
+                    alert('An error occurred while deleting the song.');
+                }
+            }
+        });
+    });
+}
 
 // --- Volume Control ---
 let volumeControl = document.getElementById('volumeControl');
