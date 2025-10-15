@@ -1,68 +1,66 @@
- // Importing all required dependencies
-const express = require('express');       // Web framework for handling routes and requests
-const mongoose = require('mongoose');     // For connecting and interacting with MongoDB
-const cors = require('cors');             // To allow cross-origin requests (important for frontend-backend connection)
-const multer = require('multer');         // For handling file uploads (like songs and cover images)
-const path = require('path');             // To handle file paths easily
-const fs = require('fs');                 // For file system operations (like deleting files)
-const Song = require('./models/Song');    // Importing the Song model from the models folder
+// Importing all required dependencies
+const express = require('express');      // Web framework for handling routes and requests
+const mongoose = require('mongoose');    // For connecting and interacting with MongoDB
+const cors = require('cors');            // To allow cross-origin requests (important for frontend-backend connection)
+const multer = require('multer');        // For handling file uploads (like songs and cover images)
+const path = require('path');            // To handle file paths easily
+const fs = require('fs');                // For file system operations (like deleting files)
+const Song = require('./models/Song');   // Importing the Song model from the models folder
 
 // Creating an Express app instance
 const app = express();
 
-// Defining the port number (you can change it if needed)
+// Defining the port number for the server to run on
 const PORT = 3000;
 
 // -------------------------------
 // MIDDLEWARE SETUP
 // -------------------------------
 
-app.use(cors());                // Enables CORS so frontend can call backend APIs
-app.use(express.json());        // Parses incoming JSON request bodies
+app.use(cors());               // Enables CORS so your frontend can call the backend APIs
+app.use(express.json());       // Parses incoming JSON request bodies
 app.use(express.static('public')); // Serves static files (songs, covers, etc.) from the "public" folder
 
 // -------------------------------
 // DATABASE CONNECTION (MONGODB)
 // -------------------------------
 
-// --- MongoDB Connection ---
 mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
 
-// This is a more robust way to listen for connection events
+// A more robust way to listen for database connection events
 mongoose.connection.on('error', err => {
   console.error('MongoDB connection error:', err);
 });
 mongoose.connection.once('open', () => {
   console.log('MongoDB connected successfully.');
 });
+
 // -------------------------------
 // FILE UPLOAD SETUP (MULTER)
 // -------------------------------
 
-// Storage configuration for uploaded files
+// Storage configuration for how to save uploaded files
 const storage = multer.diskStorage({
-  // Destination folder based on the field name
+  // Sets the destination folder based on the file type
   destination: (req, file, cb) => {
     if (file.fieldname === 'songFile') {
       cb(null, 'public/songs/'); // Save songs inside "public/songs"
     } else if (file.fieldname === 'coverFile') {
       cb(null, 'public/covers/'); // Save cover images inside "public/covers"
-    } else {
-      cb(new Error('Invalid file field'), null); // Error if unknown field
     }
   },
 
-  // Naming uploaded files (using timestamp to avoid duplicates)
+  // Sets the filename to be the original name
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+    cb(null, file.originalname);
   }
 });
 
-// Initialize multer with the above storage settings
-const upload = multer({ storage });
+// Initialize multer with the storage settings
+const upload = multer({ storage: storage });
 
 // -------------------------------
 // API ROUTES
@@ -71,79 +69,53 @@ const upload = multer({ storage });
 // ✅ Route 1: Get all songs from the database
 app.get('/api/songs', async (req, res) => {
   try {
-    const songs = await Song.find();     // Fetch all songs
-    res.json(songs);                     // Send them as JSON
+    const songs = await Song.find(); // Fetch all songs from the 'songs' collection
+    res.json(songs);                 // Send the list of songs back as JSON
   } catch (err) {
-    res.status(500).json({ message: err.message }); // Send error if something fails
+    res.status(500).json({ message: err.message }); // Send an error if something fails
   }
 });
 
-// ✅ Route 2: Upload a new song (with cover image)
+// ✅ Route 2: Upload a new song (with a cover image)
 app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
+  const { songName, artist } = req.body;
+  const filePath = `songs/${req.files.songFile[0].filename}`;
+  const coverPath = `covers/${req.files.coverFile[0].filename}`;
+
+  const newSong = new Song({
+    songName,
+    artist,
+    filePath,
+    coverPath
+  });
+
   try {
-    // Extract song info from the request body
-    const { songName, artist } = req.body;
-
-    // Ensure both song and cover are uploaded
-    if (!req.files.songFile || !req.files.coverFile) {
-      return res.status(400).json({ message: 'Both song and cover files are required.' });
-    }
-
-    // Build file paths to store in MongoDB
-    const filePath = `songs/${req.files.songFile[0].filename}`;
-    const coverPath = `covers/${req.files.coverFile[0].filename}`;
-
-    // Create a new song document
-    const newSong = new Song({
-      songName,
-      artist,
-      filePath,
-      coverPath
-    });
-
-    // Save song data to MongoDB
-    const savedSong = await newSong.save();
-
-    // Send success response
-    res.status(201).json(savedSong);
+    const savedSong = await newSong.save(); // Save the new song's data to MongoDB
+    res.status(201).json(savedSong);        // Send a success response with the new song's data
   } catch (err) {
-    console.error('Error uploading song:', err);
-    res.status(500).json({ message: 'Error uploading song' });
+    res.status(400).json({ message: err.message }); // Send an error if saving fails
   }
 });
 
 // ✅ Route 3: Delete a song by its ID
 app.delete('/api/songs/:id', async (req, res) => {
   try {
-    // Find the song in MongoDB by ID
-    const song = await Song.findById(req.params.id);
-    if (!song) {
+    const songId = req.params.id;
+    const deletedSong = await Song.findByIdAndDelete(songId); // Find and delete the song from MongoDB
+
+    if (!deletedSong) {
       return res.status(404).json({ message: 'Song not found' });
     }
 
-    // Build full file paths for deletion
-    const songPath = path.join(__dirname, 'public', song.filePath);
-    const coverPath = path.join(__dirname, 'public', song.coverPath);
+    // This code, which caused crashes on Render, is now removed.
+    // The server will no longer try to delete physical files, only the database entry.
 
-    // Delete files safely (won’t crash if file doesn’t exist)
-    [songPath, coverPath].forEach(file => {
-      if (fs.existsSync(file)) {
-        fs.unlink(file, (err) => {
-          if (err) console.error(`Error deleting file: ${file}`, err.message);
-        });
-      }
-    });
-
-    // Delete song entry from MongoDB
-    await Song.findByIdAndDelete(req.params.id);
-
-    // Send success message
-    res.json({ message: '✅ Song deleted successfully' });
+    res.json({ message: 'Song deleted successfully' }); // Send a success message
   } catch (err) {
-    console.error('Error deleting song:', err);
-    res.status(500).json({ message: '❌ Failed to delete song from server' });
+    res.status(500).json({ message: err.message }); // Send an error if something fails
   }
 });
+
 
 // -------------------------------
 // START THE SERVER
