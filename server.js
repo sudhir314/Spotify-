@@ -32,16 +32,14 @@ mongoose.connection.once('open', () => {
 // --- File Upload Setup (Multer) ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (file.fieldname === 'songFile') {
-      cb(null, 'public/songs/');
-    } else if (file.fieldname === 'coverFile') {
-      cb(null, 'public/covers/');
-    }
+    const dir = '/tmp/uploads';
+    cb(null, dir);
   },
   filename: (req, file, cb) => {
     cb(null, file.originalname);
   }
 });
+
 
 const upload = multer({ storage: storage });
 
@@ -60,8 +58,9 @@ app.get('/api/songs', async (req, res) => {
 // POST a new song
 app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
   const { songName, artist } = req.body;
-  const filePath = `songs/${req.files.songFile[0].filename}`;
-  const coverPath = `covers/${req.files.coverFile[0].filename}`;
+ const filePath = `/tmp/uploads/${req.files.songFile[0].filename}`;
+const coverPath = `/tmp/uploads/${req.files.coverFile[0].filename}`;
+
 
   const newSong = new Song({ songName, artist, filePath, coverPath });
 
