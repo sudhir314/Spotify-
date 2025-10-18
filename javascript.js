@@ -1,4 +1,4 @@
- // javascript.js (FINAL COMPLETE VERSION with Cloudinary and Delete)
+// javascript.js (FINAL VERSION with Enhanced Controls)
 
 console.log("Welcome to Spotify");
 
@@ -17,17 +17,15 @@ const totalDurationDisplay = document.getElementById('total-duration');
 
 let songs = [];
 
-// --- HELPER FUNCTION: Format seconds into MM:SS format ---
+// --- HELPER FUNCTION: Format Time ---
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) { return "00:00"; }
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    const formattedMinutes = String(minutes).padStart(2, '0');
-    const formattedSeconds = String(remainingSeconds).padStart(2, '0');
-    return `${formattedMinutes}:${formattedSeconds}`;
+    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 }
 
-// --- FETCH SONGS FROM THE SERVER ---
+// --- DATA FETCHING & RENDERING ---
 async function getSongs() {
     try {
         const response = await fetch(`${serverUrl}api/songs`);
@@ -41,13 +39,9 @@ async function getSongs() {
     }
 }
 
-// --- RENDER THE SONG LIST IN THE UI ---
 function renderSongList() {
     songItemContainer.innerHTML = '';
     songs.forEach((song, index) => {
-        const songId = song._id; // Get the unique ID for the delete button
-        
-        // Use song.coverPath directly as it is a full URL from Cloudinary
         songItemContainer.innerHTML += `
         <div class="songitem">
             <img src="${song.coverPath}" alt="${song.songName}">
@@ -55,23 +49,16 @@ function renderSongList() {
             <span class="timestamp">
                 <span class="song-duration">00:00</span>
                 <i id="${index}" class="fa-solid fa-circle-play songItemPlay"></i>
-                
-                <i data-id="${songId}" class="fa-solid fa-trash delete-btn"></i>
             </span>
         </div>`;
     });
-    
-    // Add listeners for both play and the new delete buttons
     addPlayButtonListeners();
-    addDeleteButtonListeners(); // This function call was missing
 }
 
-// --- Get the duration for each song in the list ---
 function updateAllSongDurations() {
     const durationElements = document.querySelectorAll('.song-duration');
     songs.forEach((song, index) => {
         const tempAudio = new Audio();
-        // Use song.filePath directly
         tempAudio.src = song.filePath;
         tempAudio.addEventListener('loadedmetadata', () => {
             if (durationElements[index]) {
@@ -81,64 +68,20 @@ function updateAllSongDurations() {
     });
 }
 
-// --- Load the very first song into the player UI ---
+// --- PLAYER LOGIC ---
 function loadInitialSong() {
     if (songs.length > 0) {
-        // Use song.filePath directly
         audioElement.src = songs[0].filePath;
         songInfoText.innerText = songs[0].songName;
         gif.style.opacity = 0;
-        
-        audioElement.addEventListener('loadedmetadata', () => {
-            totalDurationDisplay.innerText = formatTime(audioElement.duration);
-        });
     } else {
         songInfoText.innerText = "No songs in library";
-        currentTimeDisplay.innerText = "00:00";
-        totalDurationDisplay.innerText = "00:00";
-        myProgressBar.value = 0;
     }
 }
 
-// --- Handle main play/pause button ---
-masterPlay.addEventListener('click', () => {
-    if (!audioElement.src) return;
-    if (audioElement.paused || audioElement.currentTime <= 0) {
-        audioElement.play();
-        masterPlay.classList.replace("fa-circle-play", "fa-circle-pause");
-        gif.style.opacity = 1;
-        document.getElementById(songIndex).classList.replace("fa-circle-play", "fa-circle-pause");
-    } else {
-        audioElement.pause();
-        masterPlay.classList.replace("fa-circle-pause", "fa-circle-play");
-        gif.style.opacity = 0;
-        makeAllPlays();
-    }
-});
-
-// --- Update progress bar and timers as song plays ---
-audioElement.addEventListener('timeupdate', () => {
-    if (audioElement.duration) {
-        const progressPercent = (audioElement.currentTime / audioElement.duration) * 100;
-        myProgressBar.value = progressPercent;
-        currentTimeDisplay.innerText = formatTime(audioElement.currentTime);
-        totalDurationDisplay.innerText = formatTime(audioElement.duration);
-        currentTimeDisplay.style.left = `${progressPercent}%`;
-    }
-});
-
-// --- Seek functionality for progress bar ---
-myProgressBar.addEventListener('input', () => {
-    if (audioElement.duration) {
-        audioElement.currentTime = (myProgressBar.value * audioElement.duration) / 100;
-    }
-});
-
-// --- Play a specific song and update everything ---
 function playSong(index) {
-    if (songs.length === 0) return;
+    if (songs.length === 0 || index < 0 || index >= songs.length) return;
     songIndex = index;
-    // Use song.filePath directly
     audioElement.src = songs[songIndex].filePath;
     songInfoText.innerText = songs[songIndex].songName;
     audioElement.currentTime = 0;
@@ -149,33 +92,68 @@ function playSong(index) {
     document.getElementById(songIndex).classList.replace("fa-circle-play", "fa-circle-pause");
 }
 
-// --- Next and Previous button logic ---
+function makeAllPlays() {
+    Array.from(document.getElementsByClassName("songItemPlay")).forEach((element) => {
+        element.classList.replace("fa-circle-pause", "fa-circle-play");
+    });
+}
+
+// --- EVENT LISTENERS ---
+
+// Main Play/Pause Button
+masterPlay.addEventListener('click', () => {
+    if (!audioElement.src) return;
+    if (audioElement.paused || audioElement.currentTime <= 0) {
+        audioElement.play();
+        masterPlay.classList.replace("fa-circle-play", "fa-circle-pause");
+        gif.style.opacity = 1;
+        if(document.getElementById(songIndex)) {
+            document.getElementById(songIndex).classList.replace("fa-circle-play", "fa-circle-pause");
+        }
+    } else {
+        audioElement.pause();
+        masterPlay.classList.replace("fa-circle-pause", "fa-circle-play");
+        gif.style.opacity = 0;
+        makeAllPlays();
+    }
+});
+
+// Progress Bar and Timers
+audioElement.addEventListener('timeupdate', () => {
+    if (audioElement.duration) {
+        const progressPercent = (audioElement.currentTime / audioElement.duration) * 100;
+        myProgressBar.value = progressPercent;
+        currentTimeDisplay.innerText = formatTime(audioElement.currentTime);
+        totalDurationDisplay.innerText = formatTime(audioElement.duration);
+    }
+});
+
+myProgressBar.addEventListener('input', () => {
+    if (audioElement.duration) {
+        audioElement.currentTime = (myProgressBar.value / 100) * audioElement.duration;
+    }
+});
+
+// Next and Previous Buttons
 document.getElementById("next").addEventListener("click", () => {
     if (songs.length === 0) return;
     const newIndex = (songIndex + 1) % songs.length;
     playSong(newIndex);
 });
+
 document.getElementById("previous").addEventListener("click", () => {
     if (songs.length === 0) return;
     const newIndex = (songIndex - 1 + songs.length) % songs.length;
     playSong(newIndex);
 });
 
-// --- Helper functions ---
-function makeAllPlays() {
-    Array.from(document.getElementsByClassName("songItemPlay")).forEach((element) => {
-        element.classList.replace("fa-circle-pause", "fa-circle-play");
-    });
-}
+// Individual Song Play Buttons
 function addPlayButtonListeners() {
     Array.from(document.getElementsByClassName("songItemPlay")).forEach((element) => {
         element.addEventListener("click", (e) => {
             const clickedIndex = parseInt(e.target.id);
             if (songIndex === clickedIndex && !audioElement.paused) {
                 audioElement.pause();
-                e.target.classList.replace("fa-circle-pause", "fa-circle-play");
-                masterPlay.classList.replace("fa-circle-pause", "fa-circle-play");
-                gif.style.opacity = 0;
             } else {
                 playSong(clickedIndex);
             }
@@ -183,40 +161,58 @@ function addPlayButtonListeners() {
     });
 }
 
-// --- THIS ENTIRE FUNCTION WAS MISSING ---
-function addDeleteButtonListeners() {
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', async (e) => {
-            e.stopPropagation(); // Prevents the song from playing
 
-            const songId = e.target.getAttribute('data-id');
-            
-            if (confirm('Are you sure you want to delete this song?')) {
-                try {
-                    const response = await fetch(`${serverUrl}api/songs/${songId}`, {
-                        method: 'DELETE',
-                    });
+// --- NEW PLAYER CONTROLS ---
 
-                    if (response.ok) {
-                        getSongs(); // Refresh the entire song list
-                    } else {
-                        alert('Failed to delete the song.');
-                    }
-                } catch (error) {
-                    console.error('Error deleting song:', error);
-                    alert('An error occurred while deleting the song.');
-                }
-            }
-        });
-    });
-}
+const rewind10Btn = document.getElementById('rewind10');
+const forward10Btn = document.getElementById('forward10');
+const muteToggleBtn = document.getElementById('muteToggle');
+const volumeControl = document.getElementById('volumeControl');
 
-// --- Volume Control ---
-let volumeControl = document.getElementById('volumeControl');
-volumeControl.addEventListener('input', () => {
-    audioElement.volume = volumeControl.value;
+// Rewind 10 seconds
+rewind10Btn.addEventListener('click', () => {
+    if(audioElement.src) audioElement.currentTime = Math.max(0, audioElement.currentTime - 10);
 });
 
-// --- Start everything when the page loads ---
+// Forward 10 seconds
+forward10Btn.addEventListener('click', () => {
+    if(audioElement.src) audioElement.currentTime = Math.min(audioElement.duration || 0, audioElement.currentTime + 10);
+});
+
+// Mute/Unmute functionality
+muteToggleBtn.addEventListener('click', () => {
+    audioElement.muted = !audioElement.muted;
+    if (audioElement.muted) {
+        muteToggleBtn.classList.replace('fa-volume-high', 'fa-volume-xmark');
+        volumeControl.value = 0; // Move slider to 0 when muted
+    } else {
+        muteToggleBtn.classList.replace('fa-volume-xmark', 'fa-volume-high');
+        volumeControl.value = audioElement.volume; // Sync slider to current volume
+    }
+});
+
+// Volume control listener
+volumeControl.addEventListener('input', () => {
+    audioElement.volume = volumeControl.value;
+    if (audioElement.volume === 0) {
+        audioElement.muted = true;
+        muteToggleBtn.classList.replace('fa-volume-high', 'fa-volume-xmark');
+    } else {
+        audioElement.muted = false;
+        muteToggleBtn.classList.replace('fa-volume-xmark', 'fa-volume-high');
+    }
+});
+
+// Update controls when song data loads or changes
+audioElement.addEventListener('volumechange', () => {
+    volumeControl.value = audioElement.volume;
+    if (audioElement.muted || audioElement.volume === 0) {
+        muteToggleBtn.classList.replace('fa-volume-high', 'fa-volume-xmark');
+    } else {
+        muteToggleBtn.classList.replace('fa-volume-xmark', 'fa-volume-high');
+    }
+});
+
+
+// --- INITIALIZE THE APP ---
 document.addEventListener('DOMContentLoaded', getSongs);

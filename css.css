@@ -77,7 +77,9 @@ nav ul li {
     flex-direction: column; /* Stacks child elements vertically */
     justify-content: center; /* Centers vertically */
     align-items: center; /* Centers horizontally */
-    gap: 10px; /* Space between player sections */
+   flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    padding: 0 20px; /* Add some horizontal padding */
+    gap: 15px; /* Space between main elements */
 }
 
 /* Progress bar styling */
@@ -149,9 +151,17 @@ nav ul li {
 
 /* Song info (bottom player section) */
 .songinfo {
-    position: absolute; /* Positions it within player area */
-    left: 10vw; /* Places song info slightly from left side */
-    font-family: 'Ubuntu', sans-serif; /* Font for now-playing info */
+    position: absolute;
+    left: 20px; /* Position it left on desktop */
+    bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    order: 3; /* Keep it to the right visually on desktop */
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px; /* Limit width */
 }
 
 .songinfo img {
@@ -175,4 +185,57 @@ nav ul li {
     margin-left: 20px; /* Space between player and volume slider */
     width: 100px; /* Width of the volume slider */
     cursor: pointer; /* Makes it clickable */
+}
+nav ul li a {
+    color: inherit; /* Inherit color from parent (white) */
+    text-decoration: none; /* Remove underline */
+}
+
+
+/* --- MOBILE RESPONSIVE ADJUSTMENTS for the bottom bar --- */
+@media (max-width: 600px) {
+    .bottom {
+        flex-direction: column; /* Stack vertically on mobile */
+        height: auto; /* Allow height to expand */
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .progress-bar-container {
+        width: 95%; /* Make progress bar wider on mobile */
+        order: 1;
+        margin-bottom: 5px;
+    }
+
+    .icons {
+        width: 95%; /* Make icons span wider */
+        order: 2;
+        gap: 10px; /* Smaller gap for mobile icons */
+        font-size: 1.2em; /* Smaller icons on mobile */
+        margin-top: 5px;
+    }
+
+    #volumeControl {
+        width: 60px; /* Smaller volume slider on mobile */
+        margin-left: 5px;
+    }
+
+    .songinfo {
+        position: static; /* Remove fixed position for mobile */
+        width: 95%; /* Full width */
+        text-align: center;
+        order: 3;
+        font-size: 0.8em;
+        justify-content: center;
+        max-width: none; /* Remove max-width for mobile */
+    }
+    .songinfo img {
+        width: 30px;
+        height: 30px;
+        margin-right: 5px;
+    }
+}
+/* Utility class to hide elements */
+.hidden {
+    display: none;
 }
