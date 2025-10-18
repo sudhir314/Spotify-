@@ -91,38 +91,4 @@ app.delete('/api/songs/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running at: http://localhost:${PORT}`);
 });
-// --- NEW SEARCH FUNCTIONALITY ---
-
-// Get references to the search bar and the sections we need to control
-const searchInput = document.getElementById('searchInput');
-const homeSections = document.getElementById('home-sections');
-const searchResultsSection = document.getElementById('search-results-section');
-const searchResultsContainer = document.getElementById('search-results-container');
-
-// This function runs every time the user types in the search bar
-searchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase().trim();
-
-    if (query.length > 0) {
-        // If the user is typing something...
-        // Hide the normal "Featured" and "Recent" sections
-        homeSections.classList.add('hidden');
-        // Show the "Search Results" section
-        searchResultsSection.classList.remove('hidden');
-
-        // Filter all the songs we have to find ones that match the query
-        const searchResults = allSongs.filter(song => 
-            song.songName.toLowerCase().includes(query) ||
-            (song.artist && song.artist.toLowerCase().includes(query))
-        );
-
-        // Use the 'renderSection' function you already have to display the results!
-        renderSection(searchResults, searchResultsContainer);
-    } else {
-        // If the search bar is empty...
-        // Show the normal "Featured" and "Recent" sections again
-        homeSections.classList.remove('hidden');
-        // Hide the "Search Results" section
-        searchResultsSection.classList.add('hidden');
-    }
-});
+ 
