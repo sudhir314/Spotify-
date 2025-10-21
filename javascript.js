@@ -59,17 +59,25 @@ function renderSongList(songsToRender) {
     addPlayButtonListeners(); // Re-add listeners for these new buttons
 }
 
+// This function is now smart enough to read from the current filtered list
 function updateAllSongDurations() {
-    // This function can be slow if you have many songs, but it works
+    // 1. Get all the duration elements *currently* on the page
     const durationElements = document.querySelectorAll('.song-duration');
-    songs.forEach((song, index) => {
-        const tempAudio = new Audio();
-        tempAudio.src = song.filePath;
-        tempAudio.addEventListener('loadedmetadata', () => {
-            if (durationElements[index]) {
-                durationElements[index].innerText = formatTime(tempAudio.duration);
-            }
-        });
+
+    // 2. Loop over those elements
+    durationElements.forEach((element, index) => {
+        // 3. Get the matching song from the 'currentPlaylist'
+        const song = currentPlaylist[index];
+
+        // 4. Check if the song exists (it always should)
+        if (song) {
+            const tempAudio = new Audio();
+            tempAudio.src = song.filePath;
+            // 5. When the song data is loaded, update its text
+            tempAudio.addEventListener('loadedmetadata', () => {
+                element.innerText = formatTime(tempAudio.duration);
+            });
+        }
     });
 }
 
@@ -233,6 +241,7 @@ searchInput.addEventListener('input', async (e) => {
             
             currentPlaylist = searchedSongs; // Update the current playlist
             renderSongList(currentPlaylist); // Render *only* the search results
+            updateAllSongDurations();
         } catch (err) {
             console.error("Search failed:", err);
         }
@@ -240,6 +249,7 @@ searchInput.addEventListener('input', async (e) => {
         // If search bar is empty, show all songs
         currentPlaylist = songs; // Reset playlist to all songs
         renderSongList(currentPlaylist); // Render all songs
+        updateAllSongDurations();
     }
 });
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
