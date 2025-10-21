@@ -1,5 +1,3 @@
- // server.js (FINAL VERSION with CLOUDINARY)
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -11,7 +9,7 @@ const Song = require('./models/Song');
 const app = express();
 const PORT = 3000;
 
-// --- Configure Cloudinary using secret keys from Render ---
+// --- Configure Cloudinary ---
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -34,9 +32,9 @@ mongoose.connection.once('open', () => console.log('MongoDB connected successful
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'spotify_songs', // A folder name in your Cloudinary account
+    folder: 'spotify_songs', 
     allowed_formats: ['mp3', 'jpeg', 'png', 'jpg'],
-    resource_type: 'auto' // Automatically detect if it's an image or audio
+    resource_type: 'auto'
   }
 });
 
@@ -58,7 +56,6 @@ app.get('/api/songs', async (req, res) => {
 app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
   try {
     const { songName, artist } = req.body;
-    // Get the permanent, secure URLs from Cloudinary's response
     const filePath = req.files.songFile[0].path;
     const coverPath = req.files.coverFile[0].path;
 
@@ -66,8 +63,8 @@ app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile'
     const savedSong = await newSong.save();
     res.status(201).json(savedSong);
   } catch (err) {
-      console.error("Error during upload:", err);
-      res.status(400).json({ message: "Upload failed, please check server logs." });
+     console.error("Error during upload:", err);
+     res.status(400).json({ message: "Upload failed, please check server logs." });
   }
 });
 
@@ -87,8 +84,33 @@ app.delete('/api/songs/:id', async (req, res) => {
   }
 });
 
+//
+// ++++++++++++++++ ADD THIS NEW SEARCH ROUTE ++++++++++++++++
+//
+app.get('/api/search', async (req, res) => {
+  try {
+    const query = req.query.q; // Get the search query from URL (e.g., ?q=love)
+    if (!query) {
+      return res.status(400).json({ message: "No search query provided" });
+    }
+
+    // This query searches both 'songName' and 'artist' fields
+    const searchResults = await Song.find({
+      $or: [
+        { songName: { $regex: query, $options: 'i' } }, // 'i' = case-insensitive
+        { artist: { $regex: query, $options: 'i' } }
+      ]
+    });
+
+    res.json(searchResults); // Send the results back
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+
 // --- Start the Server ---
 app.listen(PORT, () => {
   console.log(`🚀 Server running at: http://localhost:${PORT}`);
 });
- 

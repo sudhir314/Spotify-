@@ -1,4 +1,4 @@
-// javascript.js (FINAL VERSION with Enhanced Controls)
+// javascript.js (WITH BACKEND SEARCH + PLAYER FIXES)
 
 console.log("Welcome to Spotify");
 
@@ -15,7 +15,8 @@ const serverUrl = 'https://spotify-backend-sudhir314.onrender.com/';
 const currentTimeDisplay = document.getElementById('current-time');
 const totalDurationDisplay = document.getElementById('total-duration');
 
-let songs = [];
+let songs = []; // This will hold ALL songs from the database
+let currentPlaylist = []; // This will hold the songs CURRENTLY being shown (all songs, or search results)
 
 // --- HELPER FUNCTION: Format Time ---
 function formatTime(seconds) {
@@ -29,8 +30,10 @@ function formatTime(seconds) {
 async function getSongs() {
     try {
         const response = await fetch(`${serverUrl}api/songs`);
-        songs = await response.json();
-        renderSongList();
+        songs = await response.json(); // Store all songs
+        currentPlaylist = songs; // Initially, the playlist is ALL songs
+        
+        renderSongList(currentPlaylist); // Render the full list
         loadInitialSong();
         updateAllSongDurations();
     } catch (error) {
@@ -39,9 +42,10 @@ async function getSongs() {
     }
 }
 
-function renderSongList() {
+// **MODIFIED** - Now renders any list of songs you give it
+function renderSongList(songsToRender) { 
     songItemContainer.innerHTML = '';
-    songs.forEach((song, index) => {
+    songsToRender.forEach((song, index) => {
         songItemContainer.innerHTML += `
         <div class="songitem">
             <img src="${song.coverPath}" alt="${song.songName}">
@@ -52,10 +56,11 @@ function renderSongList() {
             </span>
         </div>`;
     });
-    addPlayButtonListeners();
+    addPlayButtonListeners(); // Re-add listeners for these new buttons
 }
 
 function updateAllSongDurations() {
+    // This function can be slow if you have many songs, but it works
     const durationElements = document.querySelectorAll('.song-duration');
     songs.forEach((song, index) => {
         const tempAudio = new Audio();
@@ -69,27 +74,35 @@ function updateAllSongDurations() {
 }
 
 // --- PLAYER LOGIC ---
+// **MODIFIED** - Now uses currentPlaylist
 function loadInitialSong() {
     if (songs.length > 0) {
-        audioElement.src = songs[0].filePath;
-        songInfoText.innerText = songs[0].songName;
+        currentPlaylist = songs; // Set playlist on load
+        audioElement.src = currentPlaylist[0].filePath;
+        songInfoText.innerText = currentPlaylist[0].songName;
         gif.style.opacity = 0;
     } else {
         songInfoText.innerText = "No songs in library";
     }
 }
 
+// **MODIFIED** - Now uses currentPlaylist
 function playSong(index) {
-    if (songs.length === 0 || index < 0 || index >= songs.length) return;
+    if (currentPlaylist.length === 0 || index < 0 || index >= currentPlaylist.length) return;
     songIndex = index;
-    audioElement.src = songs[songIndex].filePath;
-    songInfoText.innerText = songs[songIndex].songName;
+    audioElement.src = currentPlaylist[songIndex].filePath;
+    songInfoText.innerText = currentPlaylist[songIndex].songName;
     audioElement.currentTime = 0;
     audioElement.play();
     gif.style.opacity = 1;
     masterPlay.classList.replace("fa-circle-play", "fa-circle-pause");
     makeAllPlays();
-    document.getElementById(songIndex).classList.replace("fa-circle-play", "fa-circle-pause");
+    
+    // Check if the element exists before trying to change it
+    const playButton = document.getElementById(songIndex);
+    if(playButton) {
+        playButton.classList.replace("fa-circle-play", "fa-circle-pause");
+    }
 }
 
 function makeAllPlays() {
@@ -134,16 +147,16 @@ myProgressBar.addEventListener('input', () => {
     }
 });
 
-// Next and Previous Buttons
+// **MODIFIED** - Next and Previous Buttons now use currentPlaylist
 document.getElementById("next").addEventListener("click", () => {
-    if (songs.length === 0) return;
-    const newIndex = (songIndex + 1) % songs.length;
+    if (currentPlaylist.length === 0) return;
+    const newIndex = (songIndex + 1) % currentPlaylist.length;
     playSong(newIndex);
 });
 
 document.getElementById("previous").addEventListener("click", () => {
-    if (songs.length === 0) return;
-    const newIndex = (songIndex - 1 + songs.length) % songs.length;
+    if (currentPlaylist.length === 0) return;
+    const newIndex = (songIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
     playSong(newIndex);
 });
 
@@ -163,7 +176,6 @@ function addPlayButtonListeners() {
 
 
 // --- NEW PLAYER CONTROLS ---
-
 const rewind10Btn = document.getElementById('rewind10');
 const forward10Btn = document.getElementById('forward10');
 const muteToggleBtn = document.getElementById('muteToggle');
@@ -182,25 +194,11 @@ forward10Btn.addEventListener('click', () => {
 // Mute/Unmute functionality
 muteToggleBtn.addEventListener('click', () => {
     audioElement.muted = !audioElement.muted;
-    if (audioElement.muted) {
-        muteToggleBtn.classList.replace('fa-volume-high', 'fa-volume-xmark');
-        volumeControl.value = 0; // Move slider to 0 when muted
-    } else {
-        muteToggleBtn.classList.replace('fa-volume-xmark', 'fa-volume-high');
-        volumeControl.value = audioElement.volume; // Sync slider to current volume
-    }
 });
 
 // Volume control listener
 volumeControl.addEventListener('input', () => {
     audioElement.volume = volumeControl.value;
-    if (audioElement.volume === 0) {
-        audioElement.muted = true;
-        muteToggleBtn.classList.replace('fa-volume-high', 'fa-volume-xmark');
-    } else {
-        audioElement.muted = false;
-        muteToggleBtn.classList.replace('fa-volume-xmark', 'fa-volume-high');
-    }
 });
 
 // Update controls when song data loads or changes
@@ -217,37 +215,32 @@ audioElement.addEventListener('volumechange', () => {
 // --- INITIALIZE THE APP ---
 document.addEventListener('DOMContentLoaded', getSongs);
 
-// --- NEW SEARCH FUNCTIONALITY ---
 
-// Get references to the search bar and the sections we need to control
+//
+// ++++++++++++++++ NEW SEARCH FUNCTIONALITY (BACKEND POWERED) ++++++++++++++++
+// This replaces the old code you had at the bottom
+//
 const searchInput = document.getElementById('searchInput');
-const homeSections = document.getElementById('home-sections');
-const searchResultsSection = document.getElementById('search-results-section');
-const searchResultsContainer = document.getElementById('search-results-container');
 
-// This function runs every time the user types in the search bar
-searchInput.addEventListener('input', (e) => {
-    // 'allSongs' is the global variable where all songs are stored
-    if (!allSongs || allSongs.length === 0) return; // Make sure songs are loaded
-
+searchInput.addEventListener('input', async (e) => {
     const query = e.target.value.toLowerCase().trim();
 
     if (query.length > 0) {
-        // If the user is typing something...
-        homeSections.classList.add('hidden'); // Hide the home categories
-        searchResultsSection.classList.remove('hidden'); // Show the search results section
-
-        // Filter all songs to find matches
-        const searchResults = allSongs.filter(song =>
-            song.songName.toLowerCase().includes(query) ||
-            (song.artist && song.artist.toLowerCase().includes(query))
-        );
-
-        // Display the filtered songs using the existing renderSection function
-        renderSection(searchResults, searchResultsContainer);
+        // If user is typing, fetch search results from backend
+        try {
+            const response = await fetch(`${serverUrl}api/search?q=${query}`);
+            const searchedSongs = await response.json();
+            
+            currentPlaylist = searchedSongs; // Update the current playlist
+            renderSongList(currentPlaylist); // Render *only* the search results
+        } catch (err) {
+            console.error("Search failed:", err);
+        }
     } else {
-        // If the search bar is empty...
-        homeSections.classList.remove('hidden'); // Show the home categories again
-        searchResultsSection.classList.add('hidden'); // Hide the search results
+        // If search bar is empty, show all songs
+        currentPlaylist = songs; // Reset playlist to all songs
+        renderSongList(currentPlaylist); // Render all songs
     }
 });
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
