@@ -1,3 +1,5 @@
+// server.js - PROFESSIONAL & SECURE VERSION
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,7 +9,7 @@ const cloudinary = require('cloudinary').v2;
 const Song = require('./models/Song');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // --- Configure Cloudinary ---
 cloudinary.config({
@@ -19,30 +21,38 @@ cloudinary.config({
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public')); 
 
 // --- MongoDB Connection ---
-mongoose.connect(process.env.DATABASE_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
-mongoose.connection.on('error', err => console.error('MongoDB connection error:', err));
-mongoose.connection.once('open', () => console.log('MongoDB connected successfully.'));
+mongoose.connect(process.env.DATABASE_URL)
+  .then(() => console.log('✅ MongoDB connected successfully.'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// --- File Upload Setup (Multer with Cloudinary) ---
+// --- File Upload Setup ---
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'spotify_songs', 
+    folder: 'spotify_songs',
     allowed_formats: ['mp3', 'jpeg', 'png', 'jpg'],
     resource_type: 'auto'
   }
 });
-
 const upload = multer({ storage: storage });
+
+// --- SECURITY MIDDLEWARE (THE FIX) ---
+// This function acts as a guard. It checks the password before allowing access.
+const verifyAdmin = (req, res, next) => {
+    const password = req.headers['x-admin-password'];
+    if (password === process.env.ADMIN_PASSWORD) {
+        next(); // Password correct, proceed
+    } else {
+        res.status(403).json({ message: "⛔ Access Denied: Incorrect Password" });
+    }
+};
 
 // --- API Routes ---
 
-// GET all songs
+// 1. GET all songs (Public)
 app.get('/api/songs', async (req, res) => {
   try {
     const songs = await Song.find();
@@ -52,65 +62,73 @@ app.get('/api/songs', async (req, res) => {
   }
 });
 
-// POST a new song (sends files to Cloudinary)
-app.post('/api/upload', upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
-  try {
-    const { songName, artist } = req.body;
-    const filePath = req.files.songFile[0].path;
-    const coverPath = req.files.coverFile[0].path;
+// 2. GET Featured (Public)
+app.get('/api/songs/featured', async (req, res) => {
+    try {
+        const songs = await Song.find({isFeatured: true}).limit(6);
+        res.json(songs);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
 
-    const newSong = new Song({ songName, artist, filePath, coverPath });
+// 3. GET Recent (Public)
+app.get('/api/songs/recent', async (req, res) => {
+    try {
+        const songs = await Song.find().sort({ createdAt: -1 }).limit(6);
+        res.json(songs);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// 4. SEARCH (Public)
+app.get('/api/search', async (req, res) => {
+  try {
+    const query = req.query.q; 
+    if (!query) return res.status(400).json({ message: "No search query" });
+    const searchResults = await Song.find({
+      $or: [
+        { songName: { $regex: query, $options: 'i' } }, 
+        { artist: { $regex: query, $options: 'i' } }
+      ]
+    });
+    res.json(searchResults); 
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// 5. UPLOAD (LOCKED 🔒)
+// We add 'verifyAdmin' here to protect the route
+app.post('/api/upload', verifyAdmin, upload.fields([{ name: 'songFile' }, { name: 'coverFile' }]), async (req, res) => {
+  try {
+    if (!req.files || !req.files.songFile || !req.files.coverFile) {
+        return res.status(400).json({ message: "Files missing" });
+    }
+    const { songName, artist, isFeatured } = req.body;
+    
+    const newSong = new Song({ 
+        songName, 
+        artist, 
+        filePath: req.files.songFile[0].path, 
+        coverPath: req.files.coverFile[0].path,
+        isFeatured: isFeatured === 'true' 
+    });
+
     const savedSong = await newSong.save();
     res.status(201).json(savedSong);
   } catch (err) {
      console.error("Error during upload:", err);
-     res.status(400).json({ message: "Upload failed, please check server logs." });
+     res.status(400).json({ message: "Upload failed" });
   }
 });
 
-// DELETE a song by its ID
-app.delete('/api/songs/:id', async (req, res) => {
+// 6. DELETE (LOCKED 🔒)
+app.delete('/api/songs/:id', verifyAdmin, async (req, res) => {
   try {
-    const songId = req.params.id;
-    const deletedSong = await Song.findByIdAndDelete(songId);
-
-    if (!deletedSong) {
-      return res.status(404).json({ message: 'Song not found' });
-    }
-    
+    const deletedSong = await Song.findByIdAndDelete(req.params.id);
+    if (!deletedSong) return res.status(404).json({ message: 'Song not found' });
     res.json({ message: 'Song deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-//
-// ++++++++++++++++ ADD THIS NEW SEARCH ROUTE ++++++++++++++++
-//
-app.get('/api/search', async (req, res) => {
-  try {
-    const query = req.query.q; // Get the search query from URL (e.g., ?q=love)
-    if (!query) {
-      return res.status(400).json({ message: "No search query provided" });
-    }
-
-    // This query searches both 'songName' and 'artist' fields
-    const searchResults = await Song.find({
-      $or: [
-        { songName: { $regex: query, $options: 'i' } }, // 'i' = case-insensitive
-        { artist: { $regex: query, $options: 'i' } }
-      ]
-    });
-
-    res.json(searchResults); // Send the results back
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//
-
-// --- Start the Server ---
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at: http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

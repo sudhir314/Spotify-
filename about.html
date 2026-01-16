@@ -4,51 +4,124 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About - Spotify Clone</title>
-    <link rel="stylesheet" href="css.css"> <link rel="stylesheet" href="about.css"> </head>
+    
+    <link rel="stylesheet" href="css.css"> 
+    <link rel="stylesheet" href="about.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        /* Override specific about page layout issues to match Sidebar design */
+        .main-content {
+            background: linear-gradient(180deg, #121212 0%, #000 100%);
+            padding: 40px;
+            overflow-y: auto;
+        }
+        /* Ensure the container fits inside the new layout */
+        .about-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: transparent; /* Blend with main theme */
+            box-shadow: none; /* Remove old box shadow */
+        }
+        .about-container h1 { font-size: 3rem; margin-bottom: 30px; border-bottom: none; }
+        .about-container h2 { color: #fff; font-size: 1.5rem; margin-top: 30px; border-bottom: 1px solid #333; }
+        .about-container p, .about-container li { color: #b3b3b3; font-size: 1rem; }
+    </style>
+</head>
 <body>
-    <nav>
-        <ul>
-            <li class="brand"><img src="logo.png" alt="Spotify">Spotify</li>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="about.html">About</a></li>
-        </ul>
-    </nav>
 
-    <div class="about-container">
-        <h1>About This Project</h1>
+    <div class="app-layout">
         
-        <section>
-            <h2>Project Overview</h2>
-            <p>This is a functional Spotify clone built from the ground up to demonstrate full-stack web development skills. It features a custom backend API and a dynamic frontend that allows for a seamless music playing experience.</p>
-        </section>
+        <aside class="sidebar" id="navMenu">
+            <div class="logo-container">
+                <img src="logo.png" alt="Logo" class="app-logo">
+                <span class="logo-text">Spotify</span>
+            </div>
 
-        <section>
-            <h2>Core Features</h2>
-            <ul>
-                <li>Dynamic music library loaded from a database.</li>
-                <li>Permanent file storage for audio and images using Cloudinary.</li>
-                <li>A private admin dashboard for uploading and deleting songs.</li>
-                <li>Full audio controls: play/pause, next/previous, progress bar, and volume.</li>
-                <li>Live timers displaying current and total song duration.</li>
+            <ul class="nav-links">
+                <li><a href="index.html"><i class="fa-solid fa-house"></i> Home</a></li>
+                <li><a href="about.html" class="active"><i class="fa-solid fa-circle-info"></i> About</a></li>
+                <li><a href="index.html" onclick="localStorage.setItem('openFavorites', 'true')"><i class="fa-solid fa-heart"></i> Favorites</a></li>
             </ul>
-        </section>
 
-        <section>
-            <h2>Technologies Used</h2>
-            <p>
-                <strong>Frontend:</strong> HTML5, CSS3, Vanilla JavaScript (ES6+)<br>
-                <strong>Backend:</strong> Node.js, Express.js<br>
-                <strong>Database:</strong> MongoDB with Mongoose<br>
-                <strong>Deployment:</strong> Render (Backend), Netlify (Frontend), MongoDB Atlas (Database)<br>
-                <strong>File Storage:</strong> Cloudinary
-            </p>
-        </section>
-        
-        <section>
-            <h2>About Me</h2>
-            <p>I am an enthusiastic and detail-oriented BCA graduate with skills in Java, SQL, and full-stack web development. I am passionate about building robust and user-friendly applications. This project showcases my ability to integrate frontend and backend technologies to create a complete product.</p>
-            <a href="https://github.com/sudhir314/Spotify-" class="github-link" target="_blank">View Project on GitHub</a>
-        </section>
+            <div class="sidebar-divider"></div>
+            
+            <div class="sidebar-playlist-info">
+                <p>PLAYLISTS</p>
+                <span class="playlist-link">Top Hits 2024</span>
+                <span class="playlist-link">Instrumental Focus</span>
+                <span class="playlist-link">Gym Motivation</span>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header class="top-bar" style="justify-content: flex-end; background: transparent;">
+                <div class="user-profile">
+                   <a href="admin.html" class="admin-link">Admin Studio</a>
+                   <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                </div>
+            </header>
+
+            <div class="about-container">
+                <h1>About This Project</h1>
+                
+                <section>
+                    <h2>Project Overview</h2>
+                    <p>This is a functional Spotify clone built from the ground up to demonstrate full-stack web development skills. It features a custom backend API and a dynamic frontend that allows for a seamless music playing experience.</p>
+                </section>
+
+                <section>
+                    <h2>Core Features</h2>
+                    <ul>
+                        <li>Dynamic music library loaded from a MongoDB database.</li>
+                        <li>Permanent file storage for audio and images using Cloudinary.</li>
+                        <li>A private admin dashboard for uploading and deleting songs.</li>
+                        <li>Full audio controls: play/pause, next/previous, progress bar, and volume.</li>
+                        <li>Real-time Audio Visualizer and Search.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Technologies Used</h2>
+                    <p>
+                        <strong>Frontend:</strong> HTML5, CSS3, Vanilla JavaScript (ES6+)<br>
+                        <strong>Backend:</strong> Node.js, Express.js<br>
+                        <strong>Database:</strong> MongoDB with Mongoose<br>
+                        <strong>File Storage:</strong> Cloudinary
+                    </p>
+                </section>
+                
+                <section>
+                    <h2>About Me</h2>
+                    <p>I am an enthusiastic and detail-oriented BCA graduate with skills in Java, SQL, and full-stack web development. I am passionate about building robust and user-friendly applications.</p>
+                    
+                    <a href="https://github.com/sudhir314/Spotify-" class="github-link" target="_blank">
+                        <i class="fa-brands fa-github"></i> View Project on GitHub
+                    </a>
+                </section>
+            </div>
+
+        </main>
     </div>
+
+    <div class="bottom-player" style="opacity: 0.5; pointer-events: none;">
+        <div class="player-left">
+            <img src="logo.png" alt="">
+            <div class="song-details">
+                <span id="masterSongName">Select a song on Home</span>
+                <span class="artist-label">Spotify Clone</span>
+            </div>
+        </div>
+        <div class="player-center">
+            <div class="player-controls">
+                <i class="fa-solid fa-circle-play" style="font-size: 2rem; color:white;"></i>
+            </div>
+        </div>
+        <div class="player-right"></div>
+    </div>
+
 </body>
 </html>

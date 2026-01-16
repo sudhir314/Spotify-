@@ -1,128 +1,153 @@
-<!DOCTYPE html> <!-- Declares the document type and version as HTML5 -->
-<html lang="en"> <!-- Starts the HTML document and sets the language to English -->
-
-<head> <!-- Head section contains meta info, title, and external links -->
-
-  <!-- Basic HTML setup -->
-  <meta charset="UTF-8"> <!-- Defines character encoding for proper text rendering -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Makes website responsive for all screen sizes -->
-
-  <!-- Page title -->
-  <title>Spotify - your favorite music is here</title> <!-- Title that appears on browser tab -->
-
-  <!-- Linking external CSS -->
-  <link rel="stylesheet" href="css.css"> <!-- Links external stylesheet for page styling -->
-
-  <!-- Font Awesome CDN for icons like play, pause -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"> <!-- Loads Font Awesome for icon support -->
-</head> <!-- End of head section -->
-
-<body> <!-- Body starts - contains visible elements -->
-
-  <!-- Top navigation bar -->
-  <nav> <!-- Main navigation bar container -->
-    <ul> <!-- Unordered list for navigation items -->
-
-      <!-- Brand section with logo and name -->
-      <li class="brand"> <!-- List item for brand logo and text -->
-        <img src="logo.png" alt="Spotify"> <!-- Brand logo image -->
-        Spotify's <!-- Brand text label -->
-      </li>
-
-      <!-- Navigation links -->
-      <li><a href="index.html">Home</a></li>    <!-- Navigation link: Home -->
-      <li><a href="about.html">About</a></li>            <!-- Navigation link: About -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify - Web Player</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
     
-    </ul> <!-- End of unordered list -->
-  </nav> <!-- End of navigation bar -->
+    <link rel="stylesheet" href="css.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
 
-  <!-- Main content area -->
-  <div class="container"> <!-- Container for the main page content -->
-
-   <div class="songlist">
-
-    <h1>Best of NCS - no copyright Sound</h1>
-    
-    <input type="text" id="searchInput" placeholder="Search songs..." class="search-bar">
-    
-    <div id="search-results-section" class="playlist-section hidden">
-        <h2>Search Results</h2>
-        <div class="song-card-container" id="search-results-container"></div>
-    </div>
-
-    <div id="home-sections">
-        <div class="playlist-section">
-            
-            <div class="song-card-container" id="featured-songs"></div>
+    <div id="contextMenu" class="context-menu">
+        <div class="menu-item" id="ctxPlay">
+            <i class="fa-solid fa-play"></i> Play Now
         </div>
-        <div class="playlist-section">
-            
-            <div class="song-card-container" id="recent-songs"></div>
+        <div class="menu-item" id="ctxQueue">
+            <i class="fa-solid fa-list"></i> Add to Queue
+        </div>
+        <div class="divider"></div>
+        <div class="menu-item" id="ctxDownload">
+            <i class="fa-solid fa-download"></i> Download
         </div>
     </div>
 
-</div>
+    <div class="app-layout">
+        
+        <aside class="sidebar" id="navMenu">
+            <div class="logo-container">
+                <img src="logo.png" alt="Logo" class="app-logo">
+                <span class="logo-text">Spotify</span>
+                <i class="fa-solid fa-xmark close-btn" id="closeMenuBtn"></i>
+            </div>
 
-       <!-- Scrollable song list container -->
-      <div class="songitemcontainer"> <!-- Holds all song items (scrollable section) -->
+            <ul class="nav-links">
+                <li><a href="index.html" class="active"><i class="fa-solid fa-house"></i> Home</a></li>
+                <li><a href="about.html"><i class="fa-solid fa-circle-info"></i> About</a></li>
+                <li onclick="showLikedSongs()"><a href="#"><i class="fa-solid fa-heart"></i> Favorites</a></li>
+            </ul>
 
-        <!-- Individual song item (repeat for each song) -->
-        <div class="songitem"> <!-- Single song item container -->
+            <div class="sidebar-divider"></div>
+            
+            <div class="sidebar-playlist-info">
+                <p>PLAYLISTS</p>
+                <span class="playlist-link" onclick="filterPlaylist('featured')">Top Hits 2024</span>
+                <span class="playlist-link" onclick="filterPlaylist('recent')">Fresh Arrivals</span>
+                <span class="playlist-link" onclick="filterPlaylist('all')">All Songs</span>
+            </div>
+        </aside>
 
-          <!-- Song cover image -->
-          <img src="covers/1.jpg" alt="1"> <!-- Displays album or song cover image -->
+        <main class="main-content">
+            
+            <header class="top-bar">
+                <i class="fa-solid fa-bars hamburger" id="hamburgerBtn"></i>
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="What do you want to listen to?">
+                </div>
+                <div class="user-profile">
+                   <a href="admin.html" class="admin-link">Admin Studio</a>
+                   <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                </div>
+            </header>
 
-          <!-- Song name -->
-          <span class="songName">Song's</span> <!-- Displays the name of the song -->
+            <div class="hero-section">
+                <canvas id="visualizerCanvas"></canvas>
+                <div class="hero-overlay">
+                    <h1>Good Morning</h1> 
+                    <p>Play millions of songs and podcasts, for free.</p>
+                </div>
+            </div>
 
-          <!-- Timestamp and play button -->
-          <span class="timestamp"> <!-- Right-side area for duration and play icon -->
-            05:34 <!-- Shows duration of song -->
-            <i class="fa-solid fa-circle-play songItemPlay"></i> <!-- Font Awesome play icon for the song -->
-          </span>
-        </div> <!-- End of one song item -->
+            <div class="content-scroll">
+                
+                <div id="search-results-section" class="section-container hidden">
+                    <div class="section-header"><h2>Search Results</h2></div>
+                    <div class="card-grid" id="search-results-container"></div>
+                </div>
 
-      </div> <!-- End of songitemcontainer -->
-    </div> <!-- End of songlist -->
+                <div id="liked-section" class="section-container hidden">
+                    <div class="section-header"><h2>Your Favorites ❤️</h2></div>
+                    <div class="card-grid" id="liked-songs-container"></div>
+                </div>
 
-    <!-- Extra banner section if needed -->
-    <div class="songBanner"></div> <!-- Placeholder for banner or extra visual section -->
+                <div class="section-container">
+                    <div class="section-header"><h2>Featured Charts</h2></div>
+                    <div class="card-grid" id="featured-songs"></div>
+                </div>
 
-  </div> <!-- End of main container -->
+                <div class="section-container">
+                    <div class="section-header"><h2>Fresh Arrivals</h2></div>
+                    <div class="card-grid" id="recent-songs"></div>
+                </div>
 
-  <!-- Bottom player control bar -->
-  <div class="bottom"> <!-- Footer music control section -->
-
-    <div class="progress-bar-container"> <!-- Container for progress bar and time display -->
-        <span id="current-time">00:00</span> <!-- Displays current time of the song -->
-        <input type="range" name="range" id="myProgressBar" min="0" value="0" max="100"> <!-- Seek bar to move through the song -->
-        <span id="total-duration">00:00</span> <!-- Displays total song duration -->
+                <div class="section-container">
+                    <div class="section-header"><h2>All Songs</h2></div>
+                    <div class="songitemcontainer"></div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <div class="icons">
-    <i class="fa-solid fa-backward-step fa-2x" id="previous"></i>
-     <i class="fa-solid fa-backward fa-2x" id="rewind10"></i> 
-     <i class="fa-solid fa-circle-play fa-2x" id="masterPlay"></i> 
-     <i class="fa-solid fa-forward fa-2x" id="forward10"></i>
-      <i class="fa-solid fa-forward-step fa-2x" id="next"></i>
-       <i class="fa-solid fa-volume-high fa-2x" id="muteToggle"></i> 
-       <input type="range" id="volumeControl" min="0" max="1" step="0.01" value="1" title="Volume">
-       </div>
+    <div class="bottom-player">
+        <div class="player-left">
+            <img src="playing.gif" id="gif" alt="">
+            <div class="song-details">
+                <span id="masterSongName">Pick a song</span>
+                <span class="artist-label">Audio Player</span>
+            </div>
+            <i class="fa-regular fa-heart" id="likeBtn"></i>
+        </div>
 
-    <div class="songinfo"> <!-- Section to display current song info -->
-        <img src="playing.gif" width="42px" alt="" id="gif"> <!-- Animated playing GIF when music plays -->
-        <span>let me love you - Justin Bieber</span> <!-- Text showing currently playing song -->
+        <div class="player-center">
+            <div class="player-controls">
+                <i class="fa-solid fa-shuffle control-icon" id="shuffleBtn" title="Shuffle"></i>
+                <i class="fa-solid fa-backward-step control-icon" id="previous"></i>
+                <div class="play-pause-btn" id="masterPlay">
+                    <i class="fa-solid fa-circle-play"></i>
+                </div>
+                <i class="fa-solid fa-forward-step control-icon" id="next"></i>
+                <i class="fa-solid fa-repeat control-icon" id="repeatBtn" title="Repeat"></i>
+            </div>
+            
+            <div class="playback-bar">
+                <span id="current-time">00:00</span>
+                <input type="range" id="myProgressBar" min="0" value="0" max="100">
+                <span id="total-duration">00:00</span>
+            </div>
+        </div>
+
+        <div class="player-right">
+            <i class="fa-solid fa-volume-high" id="muteToggle"></i>
+            <input type="range" id="volumeControl" min="0" max="1" step="0.01" value="1">
+        </div>
     </div>
 
-    
-</div> <!-- End of bottom player section -->
-
-  <!-- Font Awesome script (needed for icons to work) -->
-  <script src="https://kit.fontawesome.com/26504e4a1f.js" crossorigin="anonymous"></script> <!-- Loads Font Awesome icons functionality -->
-
-  <!-- Link to external JS file -->
-  <script src="javascript.js"></script> <!-- Links your external JavaScript file for functionality -->
-
-</body> <!-- End of body -->
-
-</html> <!-- End of HTML document -->
+    <script src="javascript.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Fail', err));
+            });
+        }
+        document.getElementById('closeMenuBtn').addEventListener('click', () => {
+            document.getElementById('navMenu').classList.remove('active');
+        });
+    </script>
+</body>
+</html>
