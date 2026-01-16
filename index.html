@@ -13,16 +13,10 @@
 <body>
 
     <div id="contextMenu" class="context-menu">
-        <div class="menu-item" id="ctxPlay">
-            <i class="fa-solid fa-play"></i> Play Now
-        </div>
-        <div class="menu-item" id="ctxQueue">
-            <i class="fa-solid fa-list"></i> Add to Queue
-        </div>
+        <div class="menu-item" id="ctxPlay"><i class="fa-solid fa-play"></i> Play Now</div>
+        <div class="menu-item" id="ctxQueue"><i class="fa-solid fa-list"></i> Add to Queue</div>
         <div class="divider"></div>
-        <div class="menu-item" id="ctxDownload">
-            <i class="fa-solid fa-download"></i> Download
-        </div>
+        <div class="menu-item" id="ctxDownload"><i class="fa-solid fa-download"></i> Download</div>
     </div>
 
     <div class="app-layout">
@@ -38,6 +32,7 @@
                 <li><a href="index.html" class="active"><i class="fa-solid fa-house"></i> Home</a></li>
                 <li><a href="about.html"><i class="fa-solid fa-circle-info"></i> About</a></li>
                 <li onclick="showLikedSongs()"><a href="#"><i class="fa-solid fa-heart"></i> Favorites</a></li>
+                <li><a href="admin.html" class="admin-sidebar-link"><i class="fa-solid fa-lock"></i> Admin Studio</a></li>
             </ul>
 
             <div class="sidebar-divider"></div>
@@ -54,15 +49,13 @@
             
             <header class="top-bar">
                 <i class="fa-solid fa-bars hamburger" id="hamburgerBtn"></i>
+                
                 <div class="search-container">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="searchInput" placeholder="What do you want to listen to?">
                 </div>
-                <div class="user-profile">
-                   <a href="admin.html" class="admin-link">Admin Studio</a>
-                   <div class="avatar"><i class="fa-solid fa-user"></i></div>
-                </div>
-            </header>
+                
+                </header>
 
             <div class="hero-section">
                 <canvas id="visualizerCanvas"></canvas>
@@ -73,7 +66,6 @@
             </div>
 
             <div class="content-scroll">
-                
                 <div id="search-results-section" class="section-container hidden">
                     <div class="section-header"><h2>Search Results</h2></div>
                     <div class="card-grid" id="search-results-container"></div>
@@ -140,14 +132,26 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW Registered'))
-                    .catch(err => console.log('SW Fail', err));
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
             });
         }
-        document.getElementById('closeMenuBtn').addEventListener('click', () => {
-            document.getElementById('navMenu').classList.remove('active');
-        });
+        
+        // --- MOBILE MENU SCRIPT ---
+        const navMenu = document.getElementById('navMenu');
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const closeMenuBtn = document.getElementById('closeMenuBtn');
+
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', () => {
+                navMenu.classList.add('active'); // Slide in
+            });
+        }
+
+        if (closeMenuBtn) {
+            closeMenuBtn.addEventListener('click', () => {
+                navMenu.classList.remove('active'); // Slide out
+            });
+        }
     </script>
 </body>
 </html>
